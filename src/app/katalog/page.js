@@ -3,19 +3,42 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Plus, MoreVertical, X, AlertCircle, ChevronDown, Eye, Pencil, Trash2, Info } from "lucide-react";
+import { useAppState } from "../AppStateProvider";
 
 export default function Katalog() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [detailModalProduct, setDetailModalProduct] = useState(null);
   const [editModalProduct, setEditModalProduct] = useState(null); // State for edit modal
+  const [newName, setNewName] = useState("");
+  const [newCategory, setNewCategory] = useState("SEMBAKO");
+  const [newUnit, setNewUnit] = useState("PACK");
+  const [newStock, setNewStock] = useState("");
+  const [formMessage, setFormMessage] = useState("");
 
-  const products = [
-    { id: "001", name: "Beras Wangi 5kg", category: "SEMBAKO", stock: 5, unit: "PACK" },
-    { id: "002", name: "Minyak Goreng 2L", category: "SEMBAKO", stock: 5, unit: "PACK" },
-    { id: "003", name: "Sabun Cuci Piring", category: "KEBERSIHAN", stock: 12, unit: "PACK" },
-    { id: "004", name: "Tepung Terigu 1kg", category: "SEMBAKO", stock: 8, unit: "PACK" },
-  ];
+  const { products, addProduct } = useAppState();
+
+  const handleAddProduct = () => {
+    const stockValue = Number(newStock);
+    if (!newName.trim() || !newStock || stockValue <= 0) {
+      setFormMessage("Isi semua field produk dengan benar.");
+      return;
+    }
+
+    addProduct({
+      name: newName.trim(),
+      category: newCategory,
+      unit: newUnit,
+      stock: stockValue,
+    });
+
+    setFormMessage("");
+    setNewName("");
+    setNewCategory("SEMBAKO");
+    setNewUnit("PACK");
+    setNewStock("");
+    setIsModalOpen(false);
+  };
 
   return (
     <DashboardLayout title="Katalog Produk">
@@ -138,7 +161,9 @@ export default function Katalog() {
                   Nama Barang (Nama_Barang)
                 </label>
                 <input 
-                  type="text" 
+                  type="text"
+                  value={newName}
+                  onChange={(event) => setNewName(event.target.value)}
                   placeholder="Masukkan nama produk..."
                   className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-gray-400"
                 />
@@ -151,10 +176,14 @@ export default function Katalog() {
                     Kategori
                   </label>
                   <div className="relative">
-                    <select className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer">
-                      <option>SEMBAKO</option>
-                      <option>ELEKTRONIK</option>
-                      <option>KEBERSIHAN</option>
+                    <select
+                      value={newCategory}
+                      onChange={(event) => setNewCategory(event.target.value)}
+                      className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="SEMBAKO">SEMBAKO</option>
+                      <option value="ELEKTRONIK">ELEKTRONIK</option>
+                      <option value="KEBERSIHAN">KEBERSIHAN</option>
                     </select>
                     <ChevronDown size={16} strokeWidth={3} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
@@ -164,10 +193,14 @@ export default function Katalog() {
                     Satuan
                   </label>
                   <div className="relative">
-                    <select className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer">
-                      <option>PACK</option>
-                      <option>PCS</option>
-                      <option>KG</option>
+                    <select
+                      value={newUnit}
+                      onChange={(event) => setNewUnit(event.target.value)}
+                      className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="PACK">PACK</option>
+                      <option value="PCS">PCS</option>
+                      <option value="KG">KG</option>
                     </select>
                     <ChevronDown size={16} strokeWidth={3} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
@@ -180,15 +213,23 @@ export default function Katalog() {
                   Stok Awal (Stok)
                 </label>
                 <input 
-                  type="number" 
+                  type="number"
+                  value={newStock}
+                  onChange={(event) => setNewStock(event.target.value)}
                   placeholder="Masukkan kuantitas stok..."
                   className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-600 font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-gray-400"
                 />
               </div>
             </div>
 
+            {formMessage && <p className="text-sm text-red-500 text-center">{formMessage}</p>}
+
             {/* Submit Button */}
-            <button className="w-full bg-brand hover:bg-[#4a3ae0] text-white rounded-full py-3.5 font-bold text-[14px] mt-8 shadow-[0_4px_12px_-4px_rgba(91,74,251,0.5)] hover:shadow-[0_6px_16px_-4px_rgba(91,74,251,0.6)] transition-all duration-200">
+            <button
+              type="button"
+              onClick={handleAddProduct}
+              className="w-full bg-brand hover:bg-[#4a3ae0] text-white rounded-full py-3.5 font-bold text-[14px] mt-8 shadow-[0_4px_12px_-4px_rgba(91,74,251,0.5)] hover:shadow-[0_6px_16px_-4px_rgba(91,74,251,0.6)] transition-all duration-200"
+            >
               Simpan Barang
             </button>
           </div>

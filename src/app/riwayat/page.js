@@ -3,59 +3,31 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { ArrowUpLeft, ArrowUpRight, MoreVertical, Info, XCircle, X } from "lucide-react";
+import { useAppState } from "../AppStateProvider";
 
 export default function Riwayat() {
   const [openMenuId, setOpenMenuId] = useState(null);
-  const [detailModalItem, setDetailModalItem] = useState(null); // State for detail modal
-
-  const historyData = [
-    {
-      id: 1,
-      type: "masuk",
-      productName: "Beras Wangi 5kg",
-      category: "SEMBAKO",
-      qty: 5,
-      unit: "PACK",
-      user: "Myesha Azka",
-      role: "OPERATOR",
-      date: "2026-05-08"
-    },
-    {
-      id: 2,
-      type: "keluar",
-      productName: "Minyak Goreng 2L",
-      category: "SEMBAKO",
-      qty: 2,
-      unit: "PACK",
-      user: "Myesha Azka",
-      role: "OPERATOR",
-      date: "2026-05-08"
-    }
-  ];
+  const [detailModalItem, setDetailModalItem] = useState(null);
+  const { transactions } = useAppState();
 
   return (
     <DashboardLayout title="Riwayat Aktivitas">
       <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 min-h-full">
-        {/* Header */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Riwayat Aktivitas</h2>
           <p className="text-gray-400 font-medium mt-1">Log transaksi gudang terbaru</p>
         </div>
 
-        {/* List */}
         <div className="flex flex-col gap-4">
-          {historyData.map((item) => (
-            <div 
-              key={item.id} 
+          {transactions.map((item) => (
+            <div
+              key={item.id}
               className="flex items-center justify-between p-5 px-6 rounded-3xl bg-white border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] transition-shadow duration-200"
             >
-              {/* Left Group */}
               <div className="flex items-center gap-6">
-                
-                {/* Icon Badge */}
                 <div className={`w-[52px] h-[52px] rounded-full flex items-center justify-center ${
-                  item.type === "masuk" 
-                    ? "bg-[#e8f7f0] text-[#2ebd6c]" 
+                  item.type === "masuk"
+                    ? "bg-[#e8f7f0] text-[#2ebd6c]"
                     : "bg-[#fdeaea] text-[#ea5b5b]"
                 }`}>
                   {item.type === "masuk" ? (
@@ -64,46 +36,37 @@ export default function Riwayat() {
                     <ArrowUpRight size={22} strokeWidth={3} />
                   )}
                 </div>
-                
-                {/* Name & Category */}
+
                 <div className="w-44">
                   <h3 className="text-[16px] font-bold text-gray-900 leading-snug">{item.productName}</h3>
                   <p className="text-[10px] font-bold text-gray-400 tracking-wider mt-1 uppercase">{item.category}</p>
                 </div>
 
-                {/* Quantity */}
                 <div className="flex items-baseline gap-1.5 w-16">
                   <span className="text-2xl font-black text-gray-900">{item.qty}</span>
                   <span className="text-[11px] font-bold text-gray-400">{item.unit}</span>
                 </div>
-
               </div>
 
-              {/* Right Group */}
               <div className="flex items-center gap-16 pr-2">
-                
-                {/* User Info */}
                 <div className="w-32">
                   <p className="text-[13px] font-bold text-gray-900">{item.user}</p>
                   <p className="text-[10px] font-bold text-gray-400 tracking-wider mt-0.5 uppercase">{item.role}</p>
                 </div>
 
-                {/* Date */}
                 <p className="text-[14px] font-bold text-gray-600 tracking-wide w-28 text-left">{item.date}</p>
 
-                {/* Action Button */}
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={() => setOpenMenuId(openMenuId === item.id ? null : item.id)}
                     className="text-gray-300 hover:text-gray-500 transition-colors p-2 rounded-full hover:bg-gray-50"
                   >
                     <MoreVertical size={20} />
                   </button>
 
-                  {/* Dropdown Menu */}
                   {openMenuId === item.id && (
                     <div className="absolute right-0 top-12 w-[200px] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100 py-3 z-10 animate-in fade-in zoom-in-95 duration-200">
-                      <button 
+                      <button
                         onClick={() => {
                           setDetailModalItem(item);
                           setOpenMenuId(null);
@@ -121,18 +84,14 @@ export default function Riwayat() {
                   )}
                 </div>
               </div>
-              
             </div>
           ))}
         </div>
       </div>
 
-      {/* Modal Detail Transaksi */}
       {detailModalItem && (
         <div className="fixed inset-0 bg-[#d9d4cd]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-[2.5rem] p-9 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            
-            {/* Header */}
             <div className="flex items-start justify-between mb-8">
               <div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-1">Rincian Transaksi</h3>
@@ -140,18 +99,17 @@ export default function Riwayat() {
                   Audit Log GudangKu
                 </p>
               </div>
-              <button 
-                onClick={() => setDetailModalItem(null)} 
+              <button
+                onClick={() => setDetailModalItem(null)}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-1"
               >
                 <X size={20} strokeWidth={2.5} />
               </button>
             </div>
 
-            {/* Banner Transaksi */}
             <div className={`flex items-center justify-between px-5 py-4 rounded-[1.25rem] mb-8 ${
-              detailModalItem.type === "masuk" 
-                ? "bg-[#e8f7f0] text-[#2ebd6c]" 
+              detailModalItem.type === "masuk"
+                ? "bg-[#e8f7f0] text-[#2ebd6c]"
                 : "bg-[#fdeaea] text-[#ea5b5b]"
             }`}>
               <div className="flex items-center gap-3">
@@ -169,9 +127,7 @@ export default function Riwayat() {
               </span>
             </div>
 
-            {/* Rincian List */}
             <div className="flex flex-col gap-6 mb-10 px-1">
-              
               <div className="flex justify-between items-center border-b border-gray-100/50 pb-4">
                 <span className="text-[13px] font-medium text-[#8b92a5]">Nama Produk</span>
                 <span className="text-[14px] font-bold text-gray-900">{detailModalItem.productName}</span>
@@ -196,21 +152,10 @@ export default function Riwayat() {
                 <span className="text-[13px] font-medium text-[#8b92a5]">Waktu Validasi</span>
                 <span className="text-[14px] font-bold text-gray-900">{detailModalItem.date}</span>
               </div>
-
             </div>
-
-            {/* Submit Button */}
-            <button 
-              onClick={() => setDetailModalItem(null)}
-              className="w-full bg-brand hover:bg-[#4a3ae0] text-white rounded-full py-4 font-bold text-[14px] shadow-[0_4px_12px_-4px_rgba(91,74,251,0.5)] hover:shadow-[0_6px_16px_-4px_rgba(91,74,251,0.6)] transition-all duration-200"
-            >
-              Selesai Audit
-            </button>
-
           </div>
         </div>
       )}
-
     </DashboardLayout>
   );
 }
