@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { useAppState } from "@/app/AppStateProvider";
 import {
   LayoutGrid,
   ArrowDownLeft,
@@ -13,6 +14,13 @@ import {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { currentUser, logout } = useAppState();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   const menuItems = [
     { name: "Katalog", path: "/katalog", icon: LayoutGrid },
@@ -60,10 +68,21 @@ export default function Sidebar() {
 
       {/* Logout Button */}
       <div className="p-4 mb-4">
-        <Link href="/login" className="w-full flex items-center gap-4 px-4 py-3.5 text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 font-medium text-sm">
-          <LogOut size={18} strokeWidth={2} />
-          Logout
-        </Link>
+        {currentUser ? (
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full flex items-center gap-4 px-4 py-3.5 text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 font-medium text-sm"
+          >
+            <LogOut size={18} strokeWidth={2} />
+            Logout
+          </button>
+        ) : (
+          <Link href="/login" className="w-full flex items-center gap-4 px-4 py-3.5 text-red-500 hover:bg-red-50 rounded-2xl transition-all duration-200 font-medium text-sm">
+            <LogOut size={18} strokeWidth={2} />
+            Login
+          </Link>
+        )}
       </div>
     </aside>
   );

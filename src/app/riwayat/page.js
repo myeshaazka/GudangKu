@@ -8,7 +8,9 @@ import { useAppState } from "../AppStateProvider";
 export default function Riwayat() {
   const [openMenuId, setOpenMenuId] = useState(null);
   const [detailModalItem, setDetailModalItem] = useState(null);
-  const { transactions } = useAppState();
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const { transactions, cancelTransaction } = useAppState();
 
   return (
     <DashboardLayout title="Riwayat Aktivitas">
@@ -76,9 +78,24 @@ export default function Riwayat() {
                         <Info size={16} strokeWidth={2.5} className="text-gray-500" />
                         Detail Transaksi
                       </button>
-                      <button className="w-full text-left px-5 py-2.5 text-[13px] font-medium text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors mt-1">
+                      <button
+                        onClick={async () => {
+                          setCancelError(null);
+                          setIsCancelling(true);
+                          try {
+                            await cancelTransaction(item.id);
+                            setOpenMenuId(null);
+                          } catch (error) {
+                            setCancelError(error?.message ?? "Gagal membatalkan transaksi.");
+                          } finally {
+                            setIsCancelling(false);
+                          }
+                        }}
+                        disabled={isCancelling}
+                        className="w-full text-left px-5 py-2.5 text-[13px] font-medium text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors mt-1 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
                         <XCircle size={16} strokeWidth={2.5} />
-                        Batalkan Transaksi
+                        {isCancelling ? "Membatalkan..." : "Batalkan Transaksi"}
                       </button>
                     </div>
                   )}
@@ -88,6 +105,12 @@ export default function Riwayat() {
           ))}
         </div>
       </div>
+
+      {cancelError && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-3xl bg-red-50 border border-red-200 p-4 shadow-lg">
+          <p className="text-sm font-semibold text-red-700">{cancelError}</p>
+        </div>
+      )}
 
       {detailModalItem && (
         <div className="fixed inset-0 bg-[#d9d4cd]/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

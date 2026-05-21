@@ -15,29 +15,39 @@ export default function Katalog() {
   const [newUnit, setNewUnit] = useState("PACK");
   const [newStock, setNewStock] = useState("");
   const [formMessage, setFormMessage] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("SEMBAKO");
+  const [editUnit, setEditUnit] = useState("PACK");
+  const [editStock, setEditStock] = useState("");
+  const [editMessage, setEditMessage] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const { products, addProduct } = useAppState();
+  const { products, addProduct, updateProduct, deleteProduct } = useAppState();
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     const stockValue = Number(newStock);
     if (!newName.trim() || !newStock || stockValue <= 0) {
       setFormMessage("Isi semua field produk dengan benar.");
       return;
     }
 
-    addProduct({
-      name: newName.trim(),
-      category: newCategory,
-      unit: newUnit,
-      stock: stockValue,
-    });
-
-    setFormMessage("");
-    setNewName("");
-    setNewCategory("SEMBAKO");
-    setNewUnit("PACK");
-    setNewStock("");
-    setIsModalOpen(false);
+    try {
+      await addProduct({
+        name: newName.trim(),
+        category: newCategory,
+        unit: newUnit,
+        stock: stockValue,
+      });
+      setFormMessage("");
+      setNewName("");
+      setNewCategory("SEMBAKO");
+      setNewUnit("PACK");
+      setNewStock("");
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error(error);
+      setFormMessage("Gagal menyimpan produk. Coba lagi.");
+    }
   };
 
   return (
@@ -109,6 +119,11 @@ export default function Katalog() {
                       <button 
                         onClick={() => {
                           setEditModalProduct(product);
+                          setEditName(product.name);
+                          setEditCategory(product.category);
+                          setEditUnit(product.unit);
+                          setEditStock(String(product.stock));
+                          setEditMessage("");
                           setOpenMenuId(null);
                         }}
                         className="w-full text-left px-5 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
@@ -116,7 +131,21 @@ export default function Katalog() {
                         <Pencil size={16} className="text-gray-500" strokeWidth={2.5} />
                         Edit Barang
                       </button>
-                      <button className="w-full text-left px-5 py-3 text-[13px] font-medium text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors mt-1 pt-3 border-t border-gray-50">
+                      <button
+                        onClick={async () => {
+                          setOpenMenuId(null);
+                          const confirmed = window.confirm(`Hapus produk ${product.name}?`);
+                          if (!confirmed) return;
+
+                          try {
+                            await deleteProduct(product.id);
+                          } catch (error) {
+                            console.error(error);
+                            window.alert(error?.message || "Gagal menghapus produk.");
+                          }
+                        }}
+                        className="w-full text-left px-5 py-3 text-[13px] font-medium text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors mt-1 pt-3 border-t border-gray-50"
+                      >
                         <Trash2 size={16} strokeWidth={2.5} />
                         Hapus Barang
                       </button>
@@ -345,7 +374,8 @@ export default function Katalog() {
                 </label>
                 <input 
                   type="text" 
-                  defaultValue={editModalProduct.name}
+                  value={editName}
+                  onChange={(event) => setEditName(event.target.value)}
                   className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
                 />
               </div>
@@ -358,7 +388,8 @@ export default function Katalog() {
                   </label>
                   <div className="relative">
                     <select 
-                      defaultValue={editModalProduct.category}
+                      value={editCategory}
+                      onChange={(event) => setEditCategory(event.target.value)}
                       className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
                     >
                       <option value="SEMBAKO">SEMBAKO</option>
@@ -374,7 +405,8 @@ export default function Katalog() {
                   </label>
                   <div className="relative">
                     <select 
-                      defaultValue={editModalProduct.unit}
+                      value={editUnit}
+                      onChange={(event) => setEditUnit(event.target.value)}
                       className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
                     >
                       <option value="PACK">PACK</option>
@@ -393,15 +425,49 @@ export default function Katalog() {
                 </label>
                 <input 
                   type="number" 
-                  defaultValue={editModalProduct.stock}
+                  value={editStock}
+                  onChange={(event) => setEditStock(event.target.value)}
                   className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
                 />
               </div>
             </div>
 
-            {/* Submit Button */}
-            <button className="w-full bg-brand hover:bg-[#4a3ae0] text-white rounded-full py-3.5 font-bold text-[14px] mt-8 shadow-[0_4px_12px_-4px_rgba(91,74,251,0.5)] hover:shadow-[0_6px_16px_-4px_rgba(91,74,251,0.6)] transition-all duration-200">
-              Perbarui Barang
+            {editMessage && <p className="text-sm text-red-500 text-center mt-3">{editMessage}</p>}
+            <button
+              type="button"
+              onClick={async () => {
+                setEditMessage("");
+                if (!editName.trim() || !editCategory || !editUnit || editStock === "" || Number.isNaN(Number(editStock)) || Number(editStock) < 0) {
+                  setEditMessage("Isi semua field edit dengan benar.");
+                  return;
+                }
+
+                if (!editModalProduct?.id) {
+                  setEditMessage("Produk tidak valid.");
+                  return;
+                }
+
+                setIsSavingEdit(true);
+                try {
+                  await updateProduct({
+                    id: editModalProduct.id,
+                    name: editName.trim(),
+                    category: editCategory,
+                    unit: editUnit,
+                    stock: Number(editStock),
+                  });
+                  setEditModalProduct(null);
+                } catch (error) {
+                  console.error(error);
+                  setEditMessage(error?.message || "Gagal memperbarui produk.");
+                } finally {
+                  setIsSavingEdit(false);
+                }
+              }}
+              disabled={isSavingEdit}
+              className="w-full bg-brand hover:bg-[#4a3ae0] text-white rounded-full py-3.5 font-bold text-[14px] mt-8 shadow-[0_4px_12px_-4px_rgba(91,74,251,0.5)] hover:shadow-[0_6px_16px_-4px_rgba(91,74,251,0.6)] transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isSavingEdit ? "Menyimpan..." : "Perbarui Barang"}
             </button>
 
           </div>

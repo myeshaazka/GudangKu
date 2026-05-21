@@ -1,13 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAppState } from "../AppStateProvider";
 
 export default function Login() {
   const router = useRouter();
+  const { currentUser, login } = useAppState();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleLogin = (e) => {
+  useEffect(() => {
+    if (currentUser) {
+      router.push("/katalog");
+    }
+  }, [currentUser, router]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    router.push("/katalog");
+    try {
+      await login({ email, password });
+      router.push("/katalog");
+    } catch (error) {
+      setMessage(error.message || "Email atau password salah.");
+    }
   };
 
   return (
@@ -31,6 +48,8 @@ export default function Login() {
             </label>
             <input 
               type="email" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full bg-[#e6e6e6] text-gray-900 h-10 px-4 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
             />
@@ -42,10 +61,14 @@ export default function Login() {
             </label>
             <input 
               type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full bg-[#e6e6e6] text-gray-900 h-10 px-4 focus:outline-none focus:ring-2 focus:ring-brand/30 transition-all"
             />
           </div>
+
+          {message && <p className="text-sm text-center text-red-500">{message}</p>}
 
           <div className="flex justify-center mt-2">
             <button 
