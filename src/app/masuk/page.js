@@ -1,10 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useAppState } from "../AppStateProvider";
 
 export default function BarangMasuk() {
+  const router = useRouter();
+  const { currentUser } = useAppState();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser) {
+      router.push("/login");
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentUser, router]);
+
+  if (isLoading || !currentUser) {
+    return null;
+  }
   const [product, setProduct] = useState("");
   const [qty, setQty] = useState(0);
   const [date, setDate] = useState("");

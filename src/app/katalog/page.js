@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Plus, MoreVertical, X, AlertCircle, ChevronDown, Eye, Pencil, Trash2, Info } from "lucide-react";
+import { Plus, MoreVertical, X, AlertCircle, ChevronDown, Eye, Pencil, Trash2, Info, Search } from "lucide-react";
 import { useAppState } from "../AppStateProvider";
 
 export default function Katalog() {
+  const router = useRouter();
+  const { currentUser, products, addProduct, updateProduct, deleteProduct } = useAppState();
+
+  // All hooks must be declared before any early return
+  const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [detailModalProduct, setDetailModalProduct] = useState(null);
-  const [editModalProduct, setEditModalProduct] = useState(null); // State for edit modal
+  const [editModalProduct, setEditModalProduct] = useState(null);
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("SEMBAKO");
   const [newUnit, setNewUnit] = useState("PACK");
@@ -21,8 +27,32 @@ export default function Katalog() {
   const [editStock, setEditStock] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Semua");
 
-  const { products, addProduct, updateProduct, deleteProduct } = useAppState();
+  useEffect(() => {
+    if (!currentUser) {
+      router.push("/login");
+    } else {
+      setIsLoading(false);
+    }
+  }, [currentUser, router]);
+
+  const categories = ["Semua", ...Array.from(new Set(products.map((p) => p.category)))];
+
+  const filteredProducts = products.filter((p) => {
+    const matchSearch =
+      searchQuery === "" ||
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.id.toString().includes(searchQuery);
+    const matchCategory = selectedCategory === "Semua" || p.category === selectedCategory;
+    return matchSearch && matchCategory;
+  });
+
+  if (isLoading || !currentUser) {
+    return null;
+  }
+
 
   const handleAddProduct = async () => {
     const stockValue = Number(newStock);
@@ -54,7 +84,7 @@ export default function Katalog() {
     <DashboardLayout title="Katalog Produk">
       <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 min-h-full">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Katalog Produk</h2>
             <p className="text-gray-400 font-medium mt-1">{products.length} produk terdaftar</p>
@@ -68,9 +98,45 @@ export default function Katalog() {
           </button>
         </div>
 
+        {/* Search + Filter Row */}
+        <div className="flex gap-3 mb-6">
+          {/* Search Input */}
+          <div className="relative flex-1">
+            <Search size={16} strokeWidth={2.5} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari berdasarkan nama produk atau ID..."
+              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-[#faf9f7] text-[13px] text-gray-700 font-medium placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+            />
+          </div>
+
+          {/* Category Filter */}
+          <div className="relative">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="appearance-none pl-4 pr-10 py-3 rounded-2xl border border-gray-200 bg-[#faf9f7] text-[13px] text-gray-700 font-semibold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all cursor-pointer"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat === "Semua" ? "Semua Kategori" : cat}</option>
+              ))}
+            </select>
+            <ChevronDown size={14} strokeWidth={2.5} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+        </div>
+
         {/* List */}
         <div className="flex flex-col gap-4">
-          {products.map((product) => (
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-16 text-gray-400">
+              <Search size={32} strokeWidth={1.5} className="mx-auto mb-3 opacity-40" />
+              <p className="font-semibold text-[15px]">Produk tidak ditemukan</p>
+              <p className="text-sm mt-1">Coba kata kunci atau kategori yang berbeda</p>
+            </div>
+          )}
+          {filteredProducts.map((product) => (
             <div 
               key={product.id} 
               className="flex items-center justify-between p-5 rounded-3xl bg-white border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.1)] transition-shadow duration-200"
@@ -211,8 +277,11 @@ export default function Katalog() {
                       className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
                     >
                       <option value="SEMBAKO">SEMBAKO</option>
-                      <option value="ELEKTRONIK">ELEKTRONIK</option>
-                      <option value="KEBERSIHAN">KEBERSIHAN</option>
+                      <option value="MINUMAN">MINUMAN</option>
+                      <option value="MAKANAN">MAKANAN</option>
+                      <option value="KEBUTUHAN RUMAH TANGGA">KEBUTUHAN RUMAH TANGGA</option>
+                      <option value="KESEHATAN">KESEHATAN</option>
+                      <option value="LAINNYA">LAINNYA</option>
                     </select>
                     <ChevronDown size={16} strokeWidth={3} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
@@ -393,8 +462,11 @@ export default function Katalog() {
                       className="w-full bg-[#faf9f7] border border-gray-100 rounded-[1.25rem] px-5 py-4 text-[13px] text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all appearance-none cursor-pointer"
                     >
                       <option value="SEMBAKO">SEMBAKO</option>
-                      <option value="ELEKTRONIK">ELEKTRONIK</option>
-                      <option value="KEBERSIHAN">KEBERSIHAN</option>
+                      <option value="MINUMAN">MINUMAN</option>
+                      <option value="MAKANAN">MAKANAN</option>
+                      <option value="KEBUTUHAN RUMAH TANGGA">KEBUTUHAN RUMAH TANGGA</option>
+                      <option value="KESEHATAN">KESEHATAN</option>
+                      <option value="LAINNYA">LAINNYA</option>
                     </select>
                     <ChevronDown size={16} strokeWidth={3} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>

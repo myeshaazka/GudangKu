@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAppState } from "@/app/AppStateProvider";
 import {
+  LayoutDashboard,
   LayoutGrid,
   ArrowDownLeft,
   ArrowUpRight,
@@ -23,6 +24,7 @@ export default function Sidebar() {
   };
 
   const menuItems = [
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { name: "Katalog", path: "/katalog", icon: LayoutGrid },
     { name: "Masuk", path: "/masuk", icon: ArrowDownLeft },
     { name: "Keluar", path: "/keluar", icon: ArrowUpRight },

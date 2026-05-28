@@ -41,40 +41,40 @@ export function AppStateProvider({ children }) {
   const [transactions, setTransactions] = useState(initialTransactions);
   const [currentUser, setCurrentUser] = useState(null);
 
+  // Central function to (re)load all data from the database
+  const refreshData = async () => {
+    try {
+      const [productsResponse, transactionsResponse] = await Promise.all([
+        fetch("/api/products"),
+        fetch("/api/transactions"),
+      ]);
+
+      if (productsResponse.ok) {
+        const productsData = await productsResponse.json();
+        if (productsData.length > 0) {
+          setProducts(productsData);
+        }
+      } else {
+        console.error("Failed to load products:", productsResponse.status);
+      }
+
+      if (transactionsResponse.ok) {
+        const transactionsData = await transactionsResponse.json();
+        setTransactions(transactionsData);
+      } else {
+        console.error("Failed to load transactions:", transactionsResponse.status);
+      }
+    } catch (error) {
+      console.error("Failed to load data from DB:", error);
+    }
+  };
+
   useEffect(() => {
-    const storedUser = window.localStorage.getItem("gudangku_user");
+    const storedUser = window.sessionStorage.getItem("gudangku_user");
     if (storedUser) {
       setCurrentUser(JSON.parse(storedUser));
     }
-
-    async function loadData() {
-      try {
-        const [productsResponse, transactionsResponse] = await Promise.all([
-          fetch("/api/products"),
-          fetch("/api/transactions"),
-        ]);
-
-        if (productsResponse.ok) {
-          const productsData = await productsResponse.json();
-          if (productsData.length > 0) {
-            setProducts(productsData);
-          }
-        } else {
-          console.error("Failed to load products from Neon:", productsResponse.status);
-        }
-
-        if (transactionsResponse.ok) {
-          const transactionsData = await transactionsResponse.json();
-          setTransactions(transactionsData);
-        } else {
-          console.error("Failed to load transactions from Neon:", transactionsResponse.status);
-        }
-      } catch (error) {
-        console.error("Failed to load data from Neon:", error);
-      }
-    }
-
-    loadData();
+    refreshData();
   }, []);
 
   const login = async ({ email, password }) => {
@@ -105,40 +105,36 @@ export function AppStateProvider({ children }) {
     }
 
     setCurrentUser(user);
-    window.localStorage.setItem("gudangku_user", JSON.stringify(user));
+    window.sessionStorage.setItem("gudangku_user", JSON.stringify(user));
     return user;
   };
 
   const logout = () => {
     setCurrentUser(null);
-    window.localStorage.removeItem("gudangku_user");
+    window.sessionStorage.removeItem("gudangku_user");
   };
 
   const addProduct = async (product) => {
     const response = await fetch("/api/products", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(product),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(errorText || "Gagal menyimpan produk ke Neon.");
+      throw new Error(errorText || "Gagal menyimpan produk.");
     }
 
     const data = await response.json();
-    setProducts((prev) => [...prev, data]);
+    await refreshData(); // sync all pages with DB
     return data;
   };
 
   const updateProduct = async (product) => {
     const response = await fetch("/api/products", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(product),
     });
 
@@ -148,16 +144,14 @@ export function AppStateProvider({ children }) {
     }
 
     const data = await response.json();
-    setProducts((prev) => prev.map((item) => (item.id === data.id ? data : item)));
+    await refreshData(); // sync all pages with DB
     return data;
   };
 
   const deleteProduct = async (productId) => {
     const response = await fetch("/api/products", {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: productId }),
     });
 
@@ -167,16 +161,14 @@ export function AppStateProvider({ children }) {
     }
 
     await response.json();
-    setProducts((prev) => prev.filter((item) => item.id !== productId));
+    await refreshData(); // sync all pages with DB
     return true;
   };
 
   const addTransaction = async (transaction) => {
     const response = await fetch("/api/transactions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...transaction,
         user: currentUser?.username ?? currentUser?.name ?? currentUser?.email ?? null,
@@ -186,39 +178,18 @@ export function AppStateProvider({ children }) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(errorText || "Gagal menyimpan transaksi ke Neon.");
+      throw new Error(errorText || "Gagal menyimpan transaksi.");
     }
 
     const data = await response.json();
-    const nextTransaction = {
-      id: data.id,
-      ...transaction,
-      user: currentUser?.username ?? currentUser?.name ?? currentUser?.email ?? null,
-      role: currentUser?.role ?? null,
-    };
-
-    setTransactions((prev) => [nextTransaction, ...prev]);
-
-    if (transaction.productId) {
-      const delta = transaction.type === "masuk" ? Number(transaction.qty) : -Number(transaction.qty);
-      setProducts((prev) =>
-        prev.map((item) =>
-          item.id === transaction.productId
-            ? { ...item, stock: Math.max(0, Number(item.stock) + delta) }
-            : item
-        )
-      );
-    }
-
-    return nextTransaction;
+    await refreshData(); // sync products (stock) + transactions with DB
+    return { id: data.id, ...transaction };
   };
 
   const cancelTransaction = async (transactionId) => {
     const response = await fetch("/api/transactions", {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: transactionId }),
     });
 
@@ -228,24 +199,24 @@ export function AppStateProvider({ children }) {
     }
 
     const data = await response.json();
-
-    setTransactions((prev) => prev.filter((item) => item.id !== transactionId));
-
-    if (data.productId) {
-      setProducts((prev) =>
-        prev.map((item) =>
-          item.id === data.productId
-            ? { ...item, stock: data.newStock ?? Math.max(0, Number(item.stock) + Number(data.delta)) }
-            : item
-        )
-      );
-    }
-
+    await refreshData(); // sync products (stock) + transactions with DB
     return data;
   };
 
   return (
-    <AppStateContext.Provider value={{ products, transactions, currentUser, login, logout, addProduct, updateProduct, deleteProduct, addTransaction, cancelTransaction }}>
+    <AppStateContext.Provider value={{
+      products,
+      transactions,
+      currentUser,
+      login,
+      logout,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+      addTransaction,
+      cancelTransaction,
+      refreshData,
+    }}>
       {children}
     </AppStateContext.Provider>
   );
