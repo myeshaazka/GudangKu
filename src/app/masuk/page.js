@@ -7,8 +7,12 @@ import { useAppState } from "../AppStateProvider";
 
 export default function BarangMasuk() {
   const router = useRouter();
-  const { currentUser } = useAppState();
+  const { currentUser, products, addTransaction } = useAppState();
   const [isLoading, setIsLoading] = useState(true);
+  const [product, setProduct] = useState("");
+  const [qty, setQty] = useState(0);
+  const [date, setDate] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!currentUser) {
@@ -21,11 +25,7 @@ export default function BarangMasuk() {
   if (isLoading || !currentUser) {
     return null;
   }
-  const [product, setProduct] = useState("");
-  const [qty, setQty] = useState(0);
-  const [date, setDate] = useState("");
-  const [message, setMessage] = useState("");
-  const { products, addTransaction } = useAppState();
+
 
   const handleSubmit = async () => {
     if (!product || qty <= 0 || !date) {
