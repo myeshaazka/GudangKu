@@ -57,7 +57,17 @@ export async function POST(request) {
     [nextId, name.trim(), category, stockValue, unit]
   );
 
-  return NextResponse.json(result.rows[0]);
+  const newProduct = result.rows[0];
+
+  // Otomatis catat transaksi "masuk" untuk stok awal produk baru
+  const today = new Date().toISOString().split("T")[0];
+  await query(
+    `INSERT INTO transactions (product_id, type, product_name, category, qty, unit, user_name, role, date)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [newProduct.id, "masuk", newProduct.name, newProduct.category, stockValue, newProduct.unit, null, null, today]
+  );
+
+  return NextResponse.json(newProduct);
 }
 
 export async function PUT(request) {

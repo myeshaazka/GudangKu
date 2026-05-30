@@ -8,7 +8,7 @@ import { useAppState } from "../AppStateProvider";
 
 export default function Katalog() {
   const router = useRouter();
-  const { currentUser, products, addProduct, updateProduct, deleteProduct } = useAppState();
+  const { currentUser, products, transactions, addProduct, updateProduct, deleteProduct } = useAppState();
 
   // All hooks must be declared before any early return
   const [isLoading, setIsLoading] = useState(true);
@@ -375,16 +375,32 @@ export default function Katalog() {
             </div>
 
             {/* Aktivitas Terakhir */}
-            <div className="mb-10">
-              <p className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3 ml-1">Aktivitas Terakhir</p>
-              <div className="bg-[#fbfaf8] rounded-2xl p-4 px-5 border border-gray-50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#f05252]"></div>
-                  <p className="text-[13px] font-bold text-gray-900">Keluar (2 PACK)</p>
+            {(() => {
+              const productTransactions = transactions
+                .filter((t) => t.product_name === detailModalProduct.name || t.productName === detailModalProduct.name)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+              const lastActivity = productTransactions[0];
+              return (
+                <div className="mb-10">
+                  <p className="text-[11px] font-bold text-gray-400 tracking-wider uppercase mb-3 ml-1">Aktivitas Terakhir</p>
+                  {lastActivity ? (
+                    <div className="bg-[#fbfaf8] rounded-2xl p-4 px-5 border border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${lastActivity.type === "masuk" ? "bg-[#22c55e]" : "bg-[#f05252]"}`}></div>
+                        <p className="text-[13px] font-bold text-gray-900">
+                          {lastActivity.type === "masuk" ? "Masuk" : "Keluar"} ({lastActivity.qty} {lastActivity.unit ?? detailModalProduct.unit})
+                        </p>
+                      </div>
+                      <p className="text-[12px] font-bold text-gray-400">{lastActivity.date}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-[#fbfaf8] rounded-2xl p-4 px-5 border border-gray-50 text-center">
+                      <p className="text-[13px] font-medium text-gray-400">Belum ada aktivitas</p>
+                    </div>
+                  )}
                 </div>
-                <p className="text-[12px] font-bold text-gray-400">2026-05-08</p>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Actions */}
             <div className="flex items-center gap-4">
